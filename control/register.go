@@ -3,28 +3,15 @@ package control
 import (
 	"StarHop/pb"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
-
-type tunnelType int
-
-const (
-	grpcServer tunnelType = iota
-	grpcClient
-)
-
-type tunnelStream interface {
-	Send(*pb.HopPacket) error
-	Recv() (*pb.HopPacket, error)
-}
-type tunnel struct {
-	tType  tunnelType
-	stream tunnelStream
-}
 
 // TODO: 处理
 func processRegisterPacket(data []byte) {
-	packet := parseRegisterPacket(data)
+	// packet := parseRegisterPacket(data)
+	_ = parseRegisterPacket(data)
+	// TODO版本判断
+
 }
 
 // 解析注册包

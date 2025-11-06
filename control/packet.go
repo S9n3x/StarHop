@@ -64,3 +64,13 @@ func getPacketType(data []byte) (packetType, bool) {
 
 	return ptype, true
 }
+
+// 提取消息ID（快速判断，不完整解析）
+func getMsgID(data []byte) (uint64, bool) {
+	if len(data) < 9 {
+		return 0, false
+	}
+
+	id := binary.BigEndian.Uint64(data[0:8])
+	return id, true
+}
