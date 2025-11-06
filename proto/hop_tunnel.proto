@@ -11,3 +11,9 @@ service HopTunnel {
 message HopPacket {
   bytes data = 1;
 }
+
+// 注册包
+message RegisterPacket {
+    string name = 1;
+    string version = 2;
+}

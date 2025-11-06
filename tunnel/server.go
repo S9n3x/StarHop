@@ -1,10 +1,10 @@
 package tunnel
 
 import (
+	"StarHop/control"
 	"StarHop/pb"
 	"StarHop/utils/logger"
 	"crypto/tls"
-	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -15,17 +15,21 @@ type hopTunnel struct {
 	pb.UnimplementedHopTunnelServer
 }
 
+// 数据处理
 func (t *hopTunnel) Stream(stream pb.HopTunnel_StreamServer) error {
 	for {
 		packet, err := stream.Recv()
 		if err != nil {
-			logger.Warn("recv-err: ", err.Error())
+			logger.Warn(err.Error())
 			break
 		}
-		logger.Info("recv-ok:", fmt.Sprint(packet.Data))
+
+		// 提交数据包
+		control.SubmitPackage(packet.Data)
 	}
 	return nil
 }
+
 func Start() {
 	cert, err := generateCert()
 	if err != nil {
