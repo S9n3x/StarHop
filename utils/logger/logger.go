@@ -37,7 +37,7 @@ func init() {
 }
 
 func Debug(args ...interface{}) {
-	logger.WithOptions(zap.AddCaller()).Debugw(fmt.Sprint(args...))
+	logger.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Debugw(fmt.Sprint(args...))
 }
 
 // Info
