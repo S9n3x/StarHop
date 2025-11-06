@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"StarHop/tunnel"
+)
 
 func main() {
-	fmt.Println("Hello World!")
+	tunnel.Start()
 }

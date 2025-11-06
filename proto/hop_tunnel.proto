@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "/pb";
+
+service HopTunnel {
+  rpc Stream (stream HopPacket) returns (stream HopPacket);
+}
+
+message HopPacket {
+  bytes data = 1;
+}
