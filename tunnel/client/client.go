@@ -3,6 +3,7 @@ package client
 import (
 	"StarHop/control"
 	"StarHop/pb"
+	"StarHop/tunnel/register"
 	"StarHop/utils/logger"
 	"StarHop/utils/meta"
 	"context"
@@ -42,14 +43,37 @@ func Register(addr string) {
 		logger.Warn("Failed to marshal register packet:", err.Error())
 		return
 	}
-	stream.Send(&pb.HopPacket{Data: control.NewPacket(control.RegisterPacketType, rData)})
+	stream.Send(&pb.HopPacket{Data: control.NewPacket(control.NextMsgID(), control.RegisterPacketType, rData)})
+	packet, err := stream.Recv()
+	if err != nil {
+		logger.Warn("Failed to receive register response:", err.Error())
+		return
+	}
+	var resp pb.RegisterPacket
+	if err := proto.Unmarshal(packet.Data, &resp); err != nil {
+		logger.Warn("Failed to unmarshal register response:", err.Error())
+		return
+	}
+	if err := register.Hub.Register(&register.TunnelConn{
+		Name:     resp.Device,
+		BackAddr: addr,
+		Stream:   stream,
+		Version:  resp.Version,
+	}, false); err != nil {
+		logger.Warn("Failed to register tunnel connection:", err.Error())
+		return
+	}
 
 	// 持续接收消息,保持连接
 	for {
-		_, err := stream.Recv()
+		packet, err := stream.Recv()
 		if err != nil {
-			logger.Warn("Stream disconnected:", err.Error())
+			logger.Warn("Failed to receive packet:", err.Error())
 			break
 		}
+		id := control.NextMsgID()
+		register.PutWaitingMsg(id, stream)
+		// 提交数据包
+		control.SubmitPackage(id, packet.Data)
 	}
 }

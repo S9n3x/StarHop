@@ -45,8 +45,8 @@ func PutWaitingMsg(msgID uint64, conn tunnelStream) {
 	}
 }
 
-// StartAutoCleanup 自动清理超时链接
-func StartAutoCleanup(interval, timeout time.Duration) {
+// StartWaitingMsgsAutoCleanup 自动清理超时链接
+func StartWaitingMsgsAutoCleanup(interval, timeout time.Duration) {
 	go func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()

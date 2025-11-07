@@ -22,9 +22,9 @@ func NextMsgID() uint64 {
 	return atomic.AddUint64(&msgIDCounter, 1)
 }
 
-func NewPacket(ptype packetType, data []byte) []byte {
+func NewPacket(id uint64, ptype packetType, data []byte) []byte {
 	return (&packet{
-		ID:   atomic.AddUint64(&msgIDCounter, 1),
+		ID:   id,
 		Type: ptype,
 		Data: data,
 	}).toBytes()
