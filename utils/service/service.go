@@ -17,8 +17,9 @@ func GenerateCert() (tls.Certificate, error) {
 	if err != nil {
 		return tls.Certificate{}, err
 	}
+
 	notBefore := time.Now()
-	notAfter := notBefore.Add(365 * 24 * time.Hour)
+	notAfter := time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
 
 	serialNumber, err := rand.Int(rand.Reader, big.NewInt(1<<62))
 	if err != nil {
@@ -45,7 +46,7 @@ func GenerateCert() (tls.Certificate, error) {
 	return cert, nil
 }
 
-func GetRandomListen() net.Listener {
+func GetRandomListen() (net.Listener, string) {
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
 		logger.Error("failed to listen on port", err.Error())
@@ -54,6 +55,5 @@ func GetRandomListen() net.Listener {
 	if err != nil {
 		logger.Error("failed to parse listener address: ", err.Error())
 	}
-	logger.Info("tunnel listening on port ", port)
-	return lis
+	return lis, port
 }

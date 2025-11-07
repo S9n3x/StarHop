@@ -1,4 +1,4 @@
-package tunnel
+package entrance
 
 import (
 	"StarHop/control"
@@ -6,6 +6,7 @@ import (
 	"StarHop/utils/logger"
 	"StarHop/utils/service"
 	"crypto/tls"
+	"net"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -31,7 +32,7 @@ func (t *hopTunnel) Stream(stream pb.HopTunnel_StreamServer) error {
 	return nil
 }
 
-func Start() {
+func Start(lis net.Listener) {
 	cert, err := service.GenerateCert()
 	if err != nil {
 		logger.Error("failed to generate tunnel TLS certificate: ", err.Error())
@@ -43,5 +44,5 @@ func Start() {
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	pb.RegisterHopTunnelServer(grpcServer, &hopTunnel{})
 
-	grpcServer.Serve(service.GetRandomListen())
+	grpcServer.Serve(lis)
 }
