@@ -3,6 +3,7 @@ package entrance
 import (
 	"StarHop/control"
 	"StarHop/pb"
+	"StarHop/tunnel/register"
 	"StarHop/utils/logger"
 	"StarHop/utils/service"
 	"crypto/tls"
@@ -22,12 +23,13 @@ func (t *hopTunnel) Stream(stream pb.HopTunnel_StreamServer) error {
 	for {
 		packet, err := stream.Recv()
 		if err != nil {
-			logger.Warn(err.Error())
+			logger.Warn("Failed to receive packet:", err.Error())
 			break
 		}
-
+		id := control.NextMsgID()
+		register.PutWaitingMsg(id, stream)
 		// 提交数据包
-		control.SubmitPackage(packet.Data)
+		control.SubmitPackage(id, packet.Data)
 	}
 	return nil
 }

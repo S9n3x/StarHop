@@ -11,36 +11,36 @@ var (
 )
 
 var (
-	WaitingConns   = make(map[uint64]*waitingMsg)
-	waitingConnsMu sync.RWMutex
+	WaitingMsgs   = make(map[uint64]*waitingMsg)
+	WaitingMsgsMu sync.RWMutex
 )
 
 type waitingMsg struct {
-	Conn      *TunnelConn
+	Stream    tunnelStream
 	CreatedAt time.Time
 }
 
-// PopWaitingConn 取出链接
-func PopWaitingConn(msgID uint64) (*TunnelConn, error) {
-	waitingConnsMu.Lock()
-	defer waitingConnsMu.Unlock()
+// PopWaitingMsg 取出消息
+func PopWaitingMsg(msgID uint64) (tunnelStream, error) {
+	WaitingMsgsMu.Lock()
+	defer WaitingMsgsMu.Unlock()
 
-	msg, exists := WaitingConns[msgID]
+	msg, exists := WaitingMsgs[msgID]
 	if !exists {
 		return nil, ErrMsgNotFound
 	}
 
-	delete(WaitingConns, msgID)
-	return msg.Conn, nil
+	delete(WaitingMsgs, msgID)
+	return msg.Stream, nil
 }
 
-// PutWaitingConn 传入链接
-func PutWaitingConn(msgID uint64, conn *TunnelConn) {
-	waitingConnsMu.Lock()
-	defer waitingConnsMu.Unlock()
+// PutWaitingMsg 传入链接
+func PutWaitingMsg(msgID uint64, conn tunnelStream) {
+	WaitingMsgsMu.Lock()
+	defer WaitingMsgsMu.Unlock()
 
-	WaitingConns[msgID] = &waitingMsg{
-		Conn:      conn,
+	WaitingMsgs[msgID] = &waitingMsg{
+		Stream:    conn,
 		CreatedAt: time.Now(),
 	}
 }
@@ -51,14 +51,14 @@ func StartAutoCleanup(interval, timeout time.Duration) {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for range ticker.C {
-			waitingConnsMu.Lock()
+			WaitingMsgsMu.Lock()
 			now := time.Now()
-			for msgID, msg := range WaitingConns {
+			for msgID, msg := range WaitingMsgs {
 				if now.Sub(msg.CreatedAt) > timeout {
-					delete(WaitingConns, msgID)
+					delete(WaitingMsgs, msgID)
 				}
 			}
-			waitingConnsMu.Unlock()
+			WaitingMsgsMu.Unlock()
 		}
 	}()
 }

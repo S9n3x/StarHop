@@ -2,14 +2,19 @@ package control
 
 var workerPool *WorkerPool
 
+type tunnelMsg struct {
+	id   uint64
+	data []byte
+}
+
 type WorkerPool struct {
-	taskChan chan []byte
+	taskChan chan tunnelMsg
 	workers  int
 }
 
 func initWorkerPool(workers int, queueSize int) {
 	workerPool = &WorkerPool{
-		taskChan: make(chan []byte, queueSize),
+		taskChan: make(chan tunnelMsg, queueSize),
 		workers:  workers,
 	}
 
@@ -19,15 +24,18 @@ func initWorkerPool(workers int, queueSize int) {
 }
 
 func (p *WorkerPool) worker() {
-	for data := range p.taskChan {
-		receiveTunnelData(data)
+	for msg := range p.taskChan {
+		receiveTunnelData(msg)
 	}
 }
 
-func (p *WorkerPool) Submit(data []byte) {
+func (p *WorkerPool) Submit(data tunnelMsg) {
 	p.taskChan <- data
 }
 
-func SubmitPackage(data []byte) {
-	workerPool.Submit(data)
+func SubmitPackage(id uint64, data []byte) {
+	workerPool.Submit(tunnelMsg{
+		id:   id,
+		data: data,
+	})
 }

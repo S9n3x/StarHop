@@ -9,7 +9,7 @@ type packetType uint8
 
 const (
 	// 通道注册
-	registerPacketType packetType = iota
+	RegisterPacketType packetType = iota
 
 	// 合法包类型的最大值
 	maxPacketType
@@ -20,6 +20,14 @@ var msgIDCounter uint64
 
 func NextMsgID() uint64 {
 	return atomic.AddUint64(&msgIDCounter, 1)
+}
+
+func NewPacket(ptype packetType, data []byte) []byte {
+	return (&packet{
+		ID:   atomic.AddUint64(&msgIDCounter, 1),
+		Type: ptype,
+		Data: data,
+	}).toBytes()
 }
 
 type packet struct {
@@ -65,7 +73,7 @@ func getPacketType(data []byte) (packetType, bool) {
 	return ptype, true
 }
 
-// 提取消息ID（快速判断，不完整解析）
+// 提取消息ID
 func getMsgID(data []byte) (uint64, bool) {
 	if len(data) < 9 {
 		return 0, false

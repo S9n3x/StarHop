@@ -14,7 +14,7 @@ message HopPacket {
 
 // 注册包
 message RegisterPacket {
-    string name = 1;
-    string version = 2;
-    string host = 3;
+    string device = 1;
+    string port = 2;
+    string version = 3;
 }

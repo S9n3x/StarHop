@@ -1,7 +1,5 @@
 package control
 
-import "StarHop/utils/logger"
-
 func InitControl() {
 	// 初始化工作线程池
 	// workers: 4 个工作线程
@@ -11,18 +9,19 @@ func InitControl() {
 }
 
 // 通道数据的接收
-func receiveTunnelData(data []byte) {
-	mid, ok := getMsgID(data)
+func receiveTunnelData(msg tunnelMsg) {
+	// 对方的消息id
+	_, ok := getMsgID(msg.data)
 	if !ok {
 		return
 	}
-	ptype, ok := getPacketType(data)
+	ptype, ok := getPacketType(msg.data)
 	if !ok {
 		return
 	}
-	logger.Debug("Received Packet - ID:", mid, " Type:", ptype)
 	switch ptype {
-	case registerPacketType:
-		processRegisterPacket(data[9:])
+	case RegisterPacketType:
+		processRegisterPacket(msg.id, msg.data[9:])
 	}
+
 }
