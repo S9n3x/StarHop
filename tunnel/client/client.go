@@ -20,7 +20,6 @@ func Register(addr string) {
 	}
 	creds := credentials.NewTLS(tlsConfig)
 
-	// conn, err := grpc.Dial("127.0.0.1:10599", grpc.WithTransportCredentials(creds))
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		logger.Warn("Unable to connect to the server:", err.Error())
