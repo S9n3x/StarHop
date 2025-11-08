@@ -6,27 +6,54 @@ import (
 	"StarHop/utils/logger"
 	"errors"
 	"io"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // HandleIncomingStream 统一处理客户端和服务端的接收循环
-func HandleIncomingStream(stream pb.Stream) {
-	for {
-		packet, err := stream.Recv()
-		if err != nil {
-			if streamRecvErrorHandle(err, stream) {
-				return // 关闭接收
+func HandleIncomingStream(stream pb.Stream) error {
+	kick := make(chan struct{}, 1)
+	recvCh := make(chan *pb.HopPacket)
+	errCh := make(chan error, 1)
+
+	// 专门的接收 goroutine
+	go func() {
+		defer close(recvCh)
+		defer close(errCh)
+		for {
+			pkt, err := stream.Recv()
+			if err != nil {
+				errCh <- err
+				continue
 			}
-			continue // 意外错误，继续接收
+			recvCh <- pkt
 		}
+	}()
 
-		id := NextMsgID()
+	for {
+		select {
+		case <-kick:
+			return errors.New("stream closed by kick")
 
-		register.PutWaitingMsg(id, stream)
+		case err, ok := <-errCh:
+			if !ok {
+				return errors.New("recv goroutine exited")
+			}
+			if streamRecvErrorHandle(err, stream) {
+				return errors.New("stream closed")
+			}
+			continue
 
-		SubmitPackage(id, packet.Data)
+		case packet, ok := <-recvCh:
+			if !ok {
+				return errors.New("recv channel closed")
+			}
+			id := NextMsgID()
+			register.PutWaitingMsg(id, stream)
+			SubmitPackage(id, packet.Data, kick)
+		}
 	}
 }
 
@@ -41,7 +68,14 @@ func streamRecvErrorHandle(err error, stream pb.Stream) bool {
 		}
 		return true
 	}
-
+	if strings.Contains(err.Error(), "stream closed by kick") {
+		if name, ok := register.Hub.RemoveByStream(stream); ok {
+			logger.Warn("Stream closed by kick", " name=", name, " err=", err.Error())
+		} else {
+			logger.Warn("Stream closed by kick (unregistered)", " err=", err.Error())
+		}
+		return true
+	}
 	st, ok := status.FromError(err)
 	if ok {
 		switch st.Code() {
@@ -58,4 +92,15 @@ func streamRecvErrorHandle(err error, stream pb.Stream) bool {
 
 	logger.Warn("Stream error (unknown error)", " err=", err.Error())
 	return false
+}
+
+func RemoveStreamError(stream pb.Stream) string {
+	var errMsg string
+
+	if name, ok := register.Hub.RemoveByStream(stream); ok {
+		logger.Warn("Stream closed by kick", " name=", name, " err=", err.Error())
+	} else {
+		logger.Warn("Stream closed by kick (unregistered)", " err=", err.Error())
+	}
+	return errMsg
 }

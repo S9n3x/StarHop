@@ -46,26 +46,8 @@ func Register(addr string) {
 	register.PutWaitingMsg(id, stream)
 	stream.Send(&pb.HopPacket{Data: control.NewPacket(id, control.RegisterPacketType, rData)})
 
-	control.HandleIncomingStream(stream)
-
-	// packet, err := stream.Recv()
-	// if err != nil {
-	// 	logger.Warn("Failed to receive register response:", err.Error())
-	// 	return
-	// }
-	// var resp pb.RegisterPacket
-	// if err := proto.Unmarshal(packet.Data, &resp); err != nil {
-	// 	logger.Warn("Failed to unmarshal register response:", err.Error())
-	// 	return
-	// }
-	// if err := register.Hub.Register(&register.TunnelConn{
-	// 	Name:     resp.Device,
-	// 	BackAddr: addr,
-	// 	Stream:   stream,
-	// 	Version:  resp.Version,
-	// }, false); err != nil {
-	// 	logger.Warn("Failed to register tunnel connection:", err.Error())
-	// 	return
-	// }
-
+	// 有错误处理错误，没错误就一直处理
+	if err := control.HandleIncomingStream(stream); err != nil {
+		logger.Warn("Stream closed with error:", err.Error())
+	}
 }

@@ -3,6 +3,7 @@ package control
 import (
 	"StarHop/pb"
 	"StarHop/tunnel/register"
+	"StarHop/utils/general"
 	"StarHop/utils/logger"
 	"StarHop/utils/meta"
 	"StarHop/utils/service"
@@ -11,7 +12,7 @@ import (
 )
 
 // processRegisterPacket 注册包处理
-func processRegisterPacket(id uint64, data []byte) {
+func processRegisterPacket(id uint64, data []byte, kick chan struct{}) {
 
 	// packet := parseRegisterPacket(data)
 	packet := parseRegisterPacket(data)
@@ -20,6 +21,8 @@ func processRegisterPacket(id uint64, data []byte) {
 	stream, err := register.PopWaitingMsg(id)
 	if err != nil {
 		logger.Warn("Failed to get waiting message for register response:", err.Error())
+		general.CloseStreamConn(kick)
+		return
 	}
 
 	// 获取回连地址
@@ -34,8 +37,9 @@ func processRegisterPacket(id uint64, data []byte) {
 		if SendHopNodeList(stream, false) != nil {
 			logger.Warn("Failed to send hop node list:", err.Error())
 		} else {
-			logger.Info("Sent hop node list to", packet.Device)
+			logger.Info("Sent hop node list to ", packet.Device)
 		}
+		general.CloseStreamConn(kick)
 		return
 	}
 
@@ -46,15 +50,16 @@ func processRegisterPacket(id uint64, data []byte) {
 	})
 	if err != nil {
 		logger.Warn("Failed to marshal register packet:", err.Error())
+		general.CloseStreamConn(kick)
 		return
 	}
 
 	if err := stream.Send(&pb.HopPacket{Data: NewPacket(id, RegisterSuccessType, rData)}); err != nil {
 		register.Hub.Remove(packet.Device)
 		logger.Warn("Failed to send register response:", err.Error())
+		general.CloseStreamConn(kick)
 		return
 	}
-
 }
 
 // 解析注册包
@@ -65,7 +70,7 @@ func parseRegisterPacket(data []byte) *pb.RegisterPacket {
 	return r
 }
 
-func processRegisterSuccessPacket(id uint64, data []byte) {
+func processRegisterSuccessPacket(id uint64, data []byte, kick chan struct{}) {
 	stream, err := register.PopWaitingMsg(id)
 	if err != nil {
 		logger.Warn("Failed to get waiting message for register response:", err.Error())
@@ -87,6 +92,16 @@ func processRegisterSuccessPacket(id uint64, data []byte) {
 		logger.Warn("Failed to register tunnel connection:", err.Error())
 		return
 	}
+}
+
+func processDisconnectPacket(id uint64, data []byte, kick chan struct{}) {
+	var resp pb.HopNodeListPacket
+	if err := proto.Unmarshal(data, &resp); err != nil {
+		logger.Warn("Failed to unmarshal disconnect response:", err.Error())
+		return
+	}
+	logger.Info(resp.Nodes)
+	return
 }
 
 // 发送注册信息的节点

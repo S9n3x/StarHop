@@ -5,6 +5,7 @@ var workerPool *WorkerPool
 type tunnelMsg struct {
 	id   uint64
 	data []byte
+	kick chan struct{}
 }
 
 type WorkerPool struct {
@@ -33,9 +34,10 @@ func (p *WorkerPool) Submit(data tunnelMsg) {
 	p.taskChan <- data
 }
 
-func SubmitPackage(id uint64, data []byte) {
+func SubmitPackage(id uint64, data []byte, kick chan struct{}) {
 	workerPool.Submit(tunnelMsg{
 		id:   id,
 		data: data,
+		kick: kick,
 	})
 }

@@ -67,3 +67,8 @@ func getPreferredMAC() string {
 	}
 	return ""
 }
+
+// Close Stream Connection
+func CloseStreamConn(kick chan struct{}) {
+	kick <- struct{}{}
+}

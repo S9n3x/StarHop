@@ -19,8 +19,7 @@ type hopTunnel struct {
 
 // 数据处理
 func (t *hopTunnel) Stream(stream pb.HopTunnel_StreamServer) error {
-	control.HandleIncomingStream(stream)
-	return nil
+	return control.HandleIncomingStream(stream)
 }
 
 func Start(lis net.Listener) {

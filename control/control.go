@@ -23,9 +23,11 @@ func receiveTunnelData(msg tunnelMsg) {
 	}
 	switch ptype {
 	case RegisterPacketType:
-		processRegisterPacket(msg.id, msg.data[9:])
+		processRegisterPacket(msg.id, msg.data[9:], msg.kick)
 	case RegisterSuccessType:
-		processRegisterSuccessPacket(msg.id, msg.data[9:])
+		processRegisterSuccessPacket(msg.id, msg.data[9:], msg.kick)
+	case DisconnectPacketType:
+		processDisconnectPacket(msg.id, msg.data[9:], msg.kick)
 	default:
 		// 未知包类型，丢弃
 	}

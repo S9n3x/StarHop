@@ -79,13 +79,13 @@ func GetClientIPFromStream(stream pb.Stream) string {
 		ctx = s.Context()
 		label = "client"
 	default:
-		logger.Debug("unsupported stream concrete type: ", fmt.Sprintf("%T", stream))
+		logger.Warn("unsupported stream concrete type: ", fmt.Sprintf("%T", stream))
 		return ""
 	}
 
 	p, ok := peer.FromContext(ctx)
 	if !ok {
-		logger.Debug("peer not found in", label, "stream context")
+		logger.Warn("peer not found in", label, "stream context")
 		return ""
 	}
 
