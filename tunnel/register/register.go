@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	ErrConnectionLimit = errors.New("registry: connection limit reached")
-	ErrNotFound        = errors.New("registry: connection not found")
-	ErrNoConnAvailable = errors.New("registry: no connection available")
+	ErrConnectionLimit      = errors.New("registry: connection limit reached")
+	ErrNotFound             = errors.New("registry: connection not found")
+	ErrNoConnAvailable      = errors.New("registry: no connection available")
+	ErrNotEnoughNonNatNodes = errors.New("registry: not enough non-NAT nodes")
 )
 
 // TunnelConn 链接信息
@@ -70,6 +71,11 @@ func (r *registryHub) Register(conn *TunnelConn, test bool) error {
 
 	if test {
 		conn.IsNAT = testNAT(conn.BackAddr)
+	}
+
+	// 保证至少保留一个非 NAT 的 slot
+	if conn.IsNAT && r.shouldReserveSlotForNonNAT() {
+		return ErrNotEnoughNonNatNodes
 	}
 
 	r.conns[conn.Name] = conn
@@ -241,4 +247,20 @@ func (r *registryHub) GetAllNodes(isNat bool) map[string]string {
 		}
 	}
 	return nodes
+}
+
+// shouldReserveSlotForNonNAT 返回是否需要为了未来的非 NAT 连接保留一个空位
+func (r *registryHub) shouldReserveSlotForNonNAT() bool {
+	if r.maxSize <= 1 {
+		// 单节点集群只能接受非 NAT
+		return true
+	}
+
+	for _, conn := range r.conns {
+		if !conn.IsNAT {
+			return false
+		}
+	}
+
+	return len(r.conns) >= r.maxSize-1
 }
