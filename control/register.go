@@ -32,6 +32,7 @@ func processRegisterPacket(id uint64, data []byte, kick chan struct{}) {
 		Name:     packet.Device,
 		BackAddr: backAddr,
 		Stream:   stream,
+		Version:  packet.Version,
 	}, true); err != nil {
 		logger.Warn("Failed to register tunnel connection:", err.Error())
 		if SendHopNodeList(stream, false) != nil {
@@ -81,11 +82,15 @@ func processRegisterSuccessPacket(id uint64, data []byte, kick chan struct{}) {
 		logger.Warn("Failed to unmarshal register response:", err.Error())
 		return
 	}
-	backAddr := service.GetClientIPFromStream(stream) + ":" + resp.Port
-
+	addr, ok := TakeAddrForStream(stream)
+	if !ok {
+		logger.Warn("Failed to take address for stream during register success processing")
+		general.CloseStreamConn(kick)
+		return
+	}
 	if err := register.Hub.Register(&register.TunnelConn{
 		Name:     resp.Device,
-		BackAddr: backAddr,
+		BackAddr: addr,
 		Stream:   stream,
 		Version:  resp.Version,
 	}, false); err != nil {
@@ -120,4 +125,19 @@ func SendHopNodeList(stream pb.Stream, isNat bool) error {
 		return err
 	}
 	return stream.Send(&pb.HopPacket{Data: NewPacket(NextMsgID(), DisconnectPacketType, hData)})
+}
+
+// Host记录
+var addrStreamMap = make(map[pb.Stream]string)
+
+func StoreAddrForStream(stream pb.Stream, addr string) {
+	addrStreamMap[stream] = addr
+}
+
+func TakeAddrForStream(stream pb.Stream) (string, bool) {
+	addr, ok := addrStreamMap[stream]
+	if ok {
+		delete(addrStreamMap, stream)
+	}
+	return addr, ok
 }

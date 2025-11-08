@@ -46,6 +46,9 @@ func Register(addr string) {
 	register.PutWaitingMsg(id, stream)
 	stream.Send(&pb.HopPacket{Data: control.NewPacket(id, control.RegisterPacketType, rData)})
 
+	// 注册链接IP
+	control.StoreAddrForStream(stream, addr)
+
 	// 无需处理错误，客户端会自动关闭链接
 	// 无错误的时候会一直进行处理，出现错误函数结束运行
 	control.HandleIncomingStream(stream)
