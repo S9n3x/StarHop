@@ -26,6 +26,8 @@ func receiveTunnelData(msg tunnelMsg) {
 		processRegisterPacket(msg.id, msg.data[9:])
 	case RegisterSuccessType:
 		processRegisterSuccessPacket(msg.id, msg.data[9:])
+	case DisconnectPacketType:
+		processDisconnectPacket(msg.id, msg.data[9:])
 	default:
 		// 未知包类型，丢弃
 	}

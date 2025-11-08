@@ -31,6 +31,9 @@ func processRegisterPacket(id uint64, data []byte) {
 		Stream:   stream,
 	}, true); err != nil {
 		logger.Warn("Failed to register tunnel connection:", err.Error())
+		// 注册中心满了，发送其他节点列表
+		// 发送后stream会在客户端接收DisconnectPacketType并处理后自然关闭
+		// 服务端的HandleIncomingStream会在stream关闭时清理资源
 		if SendHopNodeList(stream, false) != nil {
 			logger.Warn("Failed to send hop node list:", err.Error())
 		} else {
@@ -87,6 +90,37 @@ func processRegisterSuccessPacket(id uint64, data []byte) {
 		logger.Warn("Failed to register tunnel connection:", err.Error())
 		return
 	}
+}
+
+// processDisconnectPacket 处理断开连接包
+// 接收到此包表示对方要求断开连接，可能是注册中心满了
+// 包内容包含其他可用节点列表
+func processDisconnectPacket(id uint64, data []byte) {
+	stream, err := register.PopWaitingMsg(id)
+	if err != nil {
+		logger.Warn("Failed to get waiting message for disconnect packet:", err.Error())
+		return
+	}
+
+	var hopNodeList pb.HopNodeListPacket
+	if err := proto.Unmarshal(data, &hopNodeList); err != nil {
+		logger.Warn("Failed to unmarshal hop node list:", err.Error())
+		return
+	}
+
+	// 记录收到的其他节点信息
+	logger.Info("Received disconnect with hop nodes:")
+	for _, node := range hopNodeList.Nodes {
+		logger.Info("  - Device:", node.Device, " Address:", node.Address)
+	}
+
+	// TODO: 实现自动连接到返回的节点
+	// 目前只是记录日志，未来需要实现自动连接逻辑
+	logger.Info("Auto-connection to hop nodes not yet implemented")
+
+	// stream会在HandleIncomingStream中自然关闭
+	// 我们不需要显式关闭stream，它会在Recv()返回错误时自动清理
+	_ = stream
 }
 
 // 发送注册信息的节点
