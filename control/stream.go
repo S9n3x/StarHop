@@ -4,8 +4,9 @@ import (
 	"StarHop/pb"
 	"StarHop/tunnel/register"
 	"StarHop/utils/logger"
-	"errors"
-	"io"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // HandleIncomingStream 统一处理客户端和服务端的接收循环
@@ -27,11 +28,12 @@ func HandleIncomingStream(stream pb.Stream) {
 
 // 返回是否需要关闭接收任务
 func streamRecvErrorHandle(err error, stream pb.Stream) bool {
-	if errors.Is(err, io.EOF) {
+	st, ok := status.FromError(err)
+	if ok && (st.Code() == codes.Canceled || st.Code() == codes.DeadlineExceeded) {
 		if name, ok := register.Hub.RemoveByStream(stream); ok {
-			logger.Warn("Stream closed, removed registered connection", " name=", name, " err=", err.Error())
+			logger.Warn("Stream closed (context canceled)", " name=", name, " err=", err.Error())
 		} else {
-			logger.Warn("Stream closed (unregistered)", " err=", err.Error())
+			logger.Warn("Stream closed (unregistered, context canceled)", " err=", err.Error())
 		}
 		return true
 	}
