@@ -4,6 +4,8 @@ import (
 	"StarHop/pb"
 	"StarHop/tunnel/register"
 	"StarHop/utils/logger"
+	"errors"
+	"io"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,15 +30,30 @@ func HandleIncomingStream(stream pb.Stream) {
 
 // 返回是否需要关闭接收任务
 func streamRecvErrorHandle(err error, stream pb.Stream) bool {
-	st, ok := status.FromError(err)
-	if ok && (st.Code() == codes.Canceled || st.Code() == codes.DeadlineExceeded) {
+	if errors.Is(err, io.EOF) {
+		// 正常关闭
 		if name, ok := register.Hub.RemoveByStream(stream); ok {
-			logger.Warn("Stream closed (context canceled)", " name=", name, " err=", err.Error())
+			logger.Warn("Stream closed, removed registered connection", " name=", name, " err=", err.Error())
 		} else {
-			logger.Warn("Stream closed (unregistered, context canceled)", " err=", err.Error())
+			logger.Warn("Stream closed (unregistered)", " err=", err.Error())
 		}
 		return true
 	}
+
+	st, ok := status.FromError(err)
+	if ok {
+		switch st.Code() {
+		case codes.Canceled, codes.DeadlineExceeded, codes.Unavailable:
+			// Canceled/超时/不可用，都需要关闭流
+			if name, ok := register.Hub.RemoveByStream(stream); ok {
+				logger.Warn("Stream closed", " name=", name, " code=", st.Code().String(), " err=", err.Error())
+			} else {
+				logger.Warn("Stream closed (unregistered)", " code=", st.Code().String(), " err=", err.Error())
+			}
+			return true
+		}
+	}
+
 	logger.Warn("Stream error (unknown error)", " err=", err.Error())
 	return false
 }
