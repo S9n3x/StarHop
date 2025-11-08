@@ -42,26 +42,30 @@ func Register(addr string) {
 		logger.Warn("Failed to marshal register packet:", err.Error())
 		return
 	}
-	stream.Send(&pb.HopPacket{Data: control.NewPacket(control.NextMsgID(), control.RegisterPacketType, rData)})
-	packet, err := stream.Recv()
-	if err != nil {
-		logger.Warn("Failed to receive register response:", err.Error())
-		return
-	}
-	var resp pb.RegisterPacket
-	if err := proto.Unmarshal(packet.Data, &resp); err != nil {
-		logger.Warn("Failed to unmarshal register response:", err.Error())
-		return
-	}
-	if err := register.Hub.Register(&register.TunnelConn{
-		Name:     resp.Device,
-		BackAddr: addr,
-		Stream:   stream,
-		Version:  resp.Version,
-	}, false); err != nil {
-		logger.Warn("Failed to register tunnel connection:", err.Error())
-		return
-	}
+	id := control.NextMsgID()
+	register.PutWaitingMsg(id, stream)
+	stream.Send(&pb.HopPacket{Data: control.NewPacket(id, control.RegisterPacketType, rData)})
 
 	control.HandleIncomingStream(stream)
+
+	// packet, err := stream.Recv()
+	// if err != nil {
+	// 	logger.Warn("Failed to receive register response:", err.Error())
+	// 	return
+	// }
+	// var resp pb.RegisterPacket
+	// if err := proto.Unmarshal(packet.Data, &resp); err != nil {
+	// 	logger.Warn("Failed to unmarshal register response:", err.Error())
+	// 	return
+	// }
+	// if err := register.Hub.Register(&register.TunnelConn{
+	// 	Name:     resp.Device,
+	// 	BackAddr: addr,
+	// 	Stream:   stream,
+	// 	Version:  resp.Version,
+	// }, false); err != nil {
+	// 	logger.Warn("Failed to register tunnel connection:", err.Error())
+	// 	return
+	// }
+
 }

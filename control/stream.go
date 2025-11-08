@@ -23,7 +23,9 @@ func HandleIncomingStream(stream pb.Stream) {
 		}
 
 		id := NextMsgID()
+
 		register.PutWaitingMsg(id, stream)
+
 		SubmitPackage(id, packet.Data)
 	}
 }

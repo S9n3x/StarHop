@@ -18,3 +18,15 @@ message RegisterPacket {
     string port = 2;
     string version = 3;
 }
+
+// 节点信息
+message HopNodePacket {
+    string device = 1;
+    string version = 2;
+    string address = 3;
+}
+
+// 节点列表
+message HopNodeListPacket {
+    repeated HopNodePacket nodes = 1;
+}

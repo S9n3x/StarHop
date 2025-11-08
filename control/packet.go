@@ -9,8 +9,14 @@ type packetType uint8
 
 const (
 	// 通道注册
+	// 这个类型使用RegisterPacket
 	RegisterPacketType packetType = iota
-
+	// 注册成功的返回状态
+	RegisterSuccessType
+	// 主动断开链接
+	// 发生在剔除高延迟节点阶段，主节点链接数量已满，但是新来了一个低延迟的节点，给高延迟节点发送断开信号
+	// 这个类型需要携带非NAT节点的地址信息HopNodeListPacket
+	DisconnectPacketType
 	// 合法包类型的最大值
 	maxPacketType
 )

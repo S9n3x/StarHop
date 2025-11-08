@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrregistryFull    = errors.New("registry: connection limit reached")
+	ErrConnectionLimit = errors.New("registry: connection limit reached")
 	ErrNotFound        = errors.New("registry: connection not found")
 	ErrNoConnAvailable = errors.New("registry: no connection available")
 )
@@ -61,8 +61,7 @@ func (r *registryHub) Register(conn *TunnelConn, test bool) error {
 	defer r.mu.Unlock()
 
 	if len(r.conns) >= r.maxSize {
-		logger.Debug(len(r.conns), "", r.maxSize)
-		return ErrregistryFull
+		return ErrConnectionLimit
 	}
 
 	if _, exists := r.conns[conn.Name]; exists {
@@ -228,4 +227,18 @@ func (r *registryHub) ListAll() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+// 获取所有节点
+func (r *registryHub) GetAllNodes(isNat bool) map[string]string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	nodes := make(map[string]string)
+	for _, conn := range r.sorted {
+		if conn.IsNAT == isNat {
+			nodes[conn.Name] = conn.BackAddr
+		}
+	}
+	return nodes
 }

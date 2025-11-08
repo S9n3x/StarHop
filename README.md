@@ -3,6 +3,7 @@ wait
 
 # schedule
 - [x] Complete multi node registratio  
+- [ ] Node auto hop registration
 # build
 **server**
 ```bash
