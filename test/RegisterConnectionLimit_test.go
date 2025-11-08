@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// go test -v -run TestServer ./test
 func TestServer(t *testing.T) {
 	// 启动主节点
 	lis, port := getListen(":12345")
@@ -22,14 +23,18 @@ func TestServer(t *testing.T) {
 
 	entrance.Start(lis)
 }
+
+// go test -v -run TestClient1 ./test
 func TestClient1(t *testing.T) {
 	createTestClient(1, ":12345", true)
 }
 
+// go test -v -run TestClient2 ./test
 func TestClient2(t *testing.T) {
 	createTestClient(2, ":12345", false)
 }
 
+// go test -v -run TestClient3 ./test
 func TestClient3(t *testing.T) {
 	createTestClient(3, ":12345", false)
 }

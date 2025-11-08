@@ -46,8 +46,7 @@ func Register(addr string) {
 	register.PutWaitingMsg(id, stream)
 	stream.Send(&pb.HopPacket{Data: control.NewPacket(id, control.RegisterPacketType, rData)})
 
-	// 有错误处理错误，没错误就一直处理
-	if err := control.HandleIncomingStream(stream); err != nil {
-		logger.Warn("Stream closed with error:", err.Error())
-	}
+	// 无需处理错误，客户端会自动关闭链接
+	// 无错误的时候会一直进行处理，出现错误函数结束运行
+	control.HandleIncomingStream(stream)
 }

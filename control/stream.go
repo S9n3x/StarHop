@@ -59,48 +59,37 @@ func HandleIncomingStream(stream pb.Stream) error {
 
 // 返回是否需要关闭接收任务
 func streamRecvErrorHandle(err error, stream pb.Stream) bool {
+	// EOF 关闭
 	if errors.Is(err, io.EOF) {
-		// 正常关闭
-		if name, ok := register.Hub.RemoveByStream(stream); ok {
-			logger.Warn("Stream closed, removed registered connection", " name=", name, " err=", err.Error())
-		} else {
-			logger.Warn("Stream closed (unregistered)", " err=", err.Error())
-		}
+		logAndRemoveStream(stream, err, "Connect closed (EOF)")
 		return true
 	}
+	// 主动关闭
 	if strings.Contains(err.Error(), "stream closed by kick") {
-		if name, ok := register.Hub.RemoveByStream(stream); ok {
-			logger.Warn("Stream closed by kick", " name=", name, " err=", err.Error())
-		} else {
-			logger.Warn("Stream closed by kick (unregistered)", " err=", err.Error())
-		}
+		logAndRemoveStream(stream, err, "Connect closed by kick")
 		return true
 	}
-	st, ok := status.FromError(err)
-	if ok {
+	// grpc错误(不全，后续慢慢维护错误类型)
+	if st, ok := status.FromError(err); ok {
 		switch st.Code() {
 		case codes.Canceled, codes.DeadlineExceeded, codes.Unavailable:
-			// Canceled/超时/不可用，都需要关闭流
-			if name, ok := register.Hub.RemoveByStream(stream); ok {
-				logger.Warn("Stream closed", " name=", name, " code=", st.Code().String(), " err=", err.Error())
-			} else {
-				logger.Warn("Stream closed (unregistered)", " code=", st.Code().String(), " err=", err.Error())
-			}
+			logAndRemoveStream(stream, err, "Connect closed ("+st.Code().String()+")")
 			return true
 		}
 	}
-
-	logger.Warn("Stream error (unknown error)", " err=", err.Error())
+	logger.Warn("Unknown stream error (not closing stream)", "err=", err.Error())
 	return false
 }
 
-func RemoveStreamError(stream pb.Stream) string {
-	var errMsg string
-
+func logAndRemoveStream(stream pb.Stream, err error, reason string) {
 	if name, ok := register.Hub.RemoveByStream(stream); ok {
-		logger.Warn("Stream closed by kick", " name=", name, " err=", err.Error())
+		logger.Warn(reason,
+			"name=", name,
+			"err=", err.Error(),
+		)
 	} else {
-		logger.Warn("Stream closed by kick (unregistered)", " err=", err.Error())
+		logger.Warn(reason+" (unregistered)",
+			"err=", err.Error(),
+		)
 	}
-	return errMsg
 }
