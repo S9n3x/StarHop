@@ -33,5 +33,4 @@ func receiveTunnelData(msg tunnelMsg) {
 	case RegisterPacketType:
 		processRegisterPacket(msg.id, msg.data[9:])
 	}
-
 }

@@ -63,16 +63,5 @@ func Register(addr string) {
 		return
 	}
 
-	// 持续接收消息,保持连接
-	for {
-		packet, err := stream.Recv()
-		if err != nil {
-			logger.Warn("Failed to receive packet:", err.Error())
-			break
-		}
-		id := control.NextMsgID()
-		register.PutWaitingMsg(id, stream)
-		// 提交数据包
-		control.SubmitPackage(id, packet.Data)
-	}
+	control.HandleIncomingStream(stream)
 }

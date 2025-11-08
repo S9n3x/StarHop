@@ -16,20 +16,14 @@ var (
 	ErrNoConnAvailable = errors.New("registry: no connection available")
 )
 
-// tunnelStream 流接口封装
-type tunnelStream interface {
-	Send(*pb.HopPacket) error
-	Recv() (*pb.HopPacket, error)
-}
-
 // TunnelConn 链接信息
 type TunnelConn struct {
-	Name     string       // 服务名字
-	BackAddr string       // 回连地址
-	Latency  int64        // 延迟
-	Stream   tunnelStream // 流本体
-	IsNAT    bool         // 是否为可回连
-	Version  string       // 客户端版本
+	Name     string    // 服务名字
+	BackAddr string    // 回连地址
+	Latency  int64     // 延迟
+	Stream   pb.Stream // 流本体
+	IsNAT    bool      // 是否为可回连
+	Version  string    // 客户端版本
 }
 
 // Send Conn直接调用发送数据
@@ -158,6 +152,32 @@ func (r *registryHub) Remove(name string) error {
 
 	_ = conn
 	return nil
+}
+
+// RemoveByStream 根据流进行删除
+func (r *registryHub) RemoveByStream(s pb.Stream) (string, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var removedName string
+	for name, conn := range r.conns {
+		if conn.Stream == s {
+			// map和排序列表中都删除
+			removedName = name
+			delete(r.conns, name)
+			for i, c := range r.sorted {
+				if c == conn {
+					r.sorted = append(r.sorted[:i], r.sorted[i+1:]...)
+					break
+				}
+			}
+			break
+		}
+	}
+	if removedName == "" {
+		return "", false
+	}
+	return removedName, true
 }
 
 // Count 返回当前连接数

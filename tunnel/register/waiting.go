@@ -1,6 +1,7 @@
 package register
 
 import (
+	"StarHop/pb"
 	"errors"
 	"sync"
 	"time"
@@ -16,12 +17,12 @@ var (
 )
 
 type waitingMsg struct {
-	Stream    tunnelStream
+	Stream    pb.Stream
 	CreatedAt time.Time
 }
 
 // PopWaitingMsg 取出消息
-func PopWaitingMsg(msgID uint64) (tunnelStream, error) {
+func PopWaitingMsg(msgID uint64) (pb.Stream, error) {
 	WaitingMsgsMu.Lock()
 	defer WaitingMsgsMu.Unlock()
 
@@ -35,12 +36,12 @@ func PopWaitingMsg(msgID uint64) (tunnelStream, error) {
 }
 
 // PutWaitingMsg 传入链接
-func PutWaitingMsg(msgID uint64, conn tunnelStream) {
+func PutWaitingMsg(msgID uint64, stream pb.Stream) {
 	WaitingMsgsMu.Lock()
 	defer WaitingMsgsMu.Unlock()
 
 	WaitingMsgs[msgID] = &waitingMsg{
-		Stream:    conn,
+		Stream:    stream,
 		CreatedAt: time.Now(),
 	}
 }
