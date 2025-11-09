@@ -39,10 +39,11 @@ func (tc *TunnelConn) Recv() (*pb.HopPacket, error) {
 
 // registry 连接注册中心
 type registryHub struct {
-	maxSize int                    // 连接数上限
-	mu      sync.RWMutex           // 并发保护
-	conns   map[string]*TunnelConn // Name -> Conn 快速查找
-	sorted  []*TunnelConn          // 延迟排序
+	maxSize                int                    // 连接数上限
+	MaxActiveOutboundConns int                    // 最大活跃出站连接数
+	mu                     sync.RWMutex           // 并发保护
+	conns                  map[string]*TunnelConn // Name -> Conn 快速查找
+	sorted                 []*TunnelConn          // 延迟排序
 }
 
 // CreateRegistryHub 创建注册中心实例
@@ -51,7 +52,12 @@ func CreateRegistryHub(maxSize int) {
 		maxSize: maxSize,
 		conns:   make(map[string]*TunnelConn),
 		sorted:  make([]*TunnelConn, 0, maxSize),
+		// 百分之60的主动链接，目的是为了防止HopMesh组成有上限的网络。
+		MaxActiveOutboundConns: (maxSize * 6) / 10,
 	}
+	// 注册中心配置打印
+	logger.Info("Registry Hub Max Connections:", maxSize)
+	logger.Info("Registry Hub Max Active Outbound Connections:", Hub.MaxActiveOutboundConns)
 }
 
 var Hub = registryHub{}
@@ -249,18 +255,31 @@ func (r *registryHub) GetAllNodes(isNat bool) map[string]string {
 	return nodes
 }
 
-// shouldReserveSlotForNonNAT 返回是否需要为了未来的非 NAT 连接保留一个空位
+// shouldReserveSlotForNonNAT 至少百分之10的空余位置留给非NAT节点
 func (r *registryHub) shouldReserveSlotForNonNAT() bool {
+	minReservedSlots := r.maxSize / 10
+
+	// 至少1个非NAT节点位置
+	if r.maxSize > 0 && minReservedSlots == 0 {
+		minReservedSlots = 1
+	}
+
 	if r.maxSize <= 1 {
-		// 单节点集群只能接受非 NAT
 		return true
 	}
 
+	// 检查是否有非 NAT 连接
+	cont := 0
 	for _, conn := range r.conns {
 		if !conn.IsNAT {
-			return false
+			cont++
 		}
 	}
+	// 已达成非NAT连接数量，直接返回 false
+	if cont >= minReservedSlots {
+		return false
+	}
 
-	return len(r.conns) >= r.maxSize-1
+	// 检查是否还有空余位置，没有则返回 true
+	return len(r.conns) >= r.maxSize-minReservedSlots
 }

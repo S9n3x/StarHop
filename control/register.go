@@ -71,6 +71,7 @@ func parseRegisterPacket(data []byte) *pb.RegisterPacket {
 	return r
 }
 
+// 注册成功后反向注册服务端
 func processRegisterSuccessPacket(id uint64, data []byte, kick chan struct{}) {
 	stream, err := register.PopWaitingMsg(id)
 	if err != nil {
@@ -99,6 +100,7 @@ func processRegisterSuccessPacket(id uint64, data []byte, kick chan struct{}) {
 	}
 }
 
+// 处理断开连接包
 func processDisconnectPacket(id uint64, data []byte, kick chan struct{}) {
 	var resp pb.HopNodeListPacket
 	if err := proto.Unmarshal(data, &resp); err != nil {
@@ -106,6 +108,9 @@ func processDisconnectPacket(id uint64, data []byte, kick chan struct{}) {
 		return
 	}
 	logger.Info(resp.Nodes)
+	for _, node := range resp.Nodes {
+		logger.Info("Node:", node.Device, "Address:", node.Address)
+	}
 	return
 }
 

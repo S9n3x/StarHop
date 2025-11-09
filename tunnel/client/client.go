@@ -51,5 +51,13 @@ func Register(addr string) {
 
 	// 无需处理错误，客户端会自动关闭链接
 	// 无错误的时候会一直进行处理，出现错误函数结束运行
+	// 错误在抛出时就已处理，无需再次处理
 	control.HandleIncomingStream(stream)
+}
+
+func CreateClientConn() {
+	for {
+		info := control.TakeCandidate()
+		Register(info.Address)
+	}
 }
