@@ -111,7 +111,9 @@ func processDisconnectPacket(id uint64, data []byte, kick chan struct{}) {
 	for _, node := range resp.Nodes {
 		logger.Info("Node:", node.Device, "Address:", node.Address)
 	}
-	return
+
+	StoreCandidateNodes(resp.Nodes...)
+	general.CloseStreamConn(kick)
 }
 
 // 发送注册信息的节点
