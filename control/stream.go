@@ -77,19 +77,19 @@ func streamRecvErrorHandle(err error, stream pb.Stream) bool {
 			return true
 		}
 	}
-	logger.Warn("Unknown stream error (not closing stream)", "err=", err.Error())
+	logger.Warn("Unknown stream error (not closing stream)", " err=", err.Error())
 	return false
 }
 
 func logAndRemoveStream(stream pb.Stream, err error, reason string) {
 	if name, ok := register.Hub.RemoveByStream(stream); ok {
 		logger.Warn(reason,
-			"name=", name,
-			"err=", err.Error(),
+			" name=", name,
+			" err=", err.Error(),
 		)
 	} else {
 		logger.Warn(reason+" (unregistered)",
-			"err=", err.Error(),
+			" err=", err.Error(),
 		)
 	}
 }
