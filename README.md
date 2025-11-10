@@ -1,15 +1,17 @@
 # StarHop – Latency-Driven P2P Proxy Mesh
 wait
 
-# schedule
+# Schedule
 - [x] Complete multi node registratio  
-- [ ] Node auto hop registration
-# build
+- [x] Node auto hop registration
+- [x] Delayed pre heartbeat of node
+- [ ] Proxy protocol adaptation
+# Build
 **server**
 ```bash
 go build -ldflags="-s -w" -trimpath -o StarHop.exe .\cmd\server\main.go
 ```
-# develop
+# Develop
 **grpc**
 ```bash
 protoc --go_out=plugins=grpc:./ proto\hop_tunnel.proto

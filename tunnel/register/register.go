@@ -97,7 +97,7 @@ func (r *registryHub) Register(conn *TunnelConn, test bool) error {
 
 // 测试是否为nat
 func testNAT(addr string) bool {
-	conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
+	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 	if err != nil {
 		return true
 	}

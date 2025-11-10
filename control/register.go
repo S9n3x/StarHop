@@ -12,13 +12,13 @@ import (
 )
 
 // processRegisterPacket 注册包处理
-func processRegisterPacket(id uint64, data []byte, kick chan struct{}) {
+func processRegisterPacket(mid uint64, data []byte, kick chan struct{}) {
 
 	// packet := parseRegisterPacket(data)
 	packet := parseRegisterPacket(data)
 	// TODO版本判断
 
-	stream, err := register.PopWaitingMsg(id)
+	stream, err := register.PopWaitingMsg(mid)
 	if err != nil {
 		logger.Warn("Failed to get waiting message for register response:", err.Error())
 		general.CloseStreamConn(kick)
@@ -43,6 +43,8 @@ func processRegisterPacket(id uint64, data []byte, kick chan struct{}) {
 		general.CloseStreamConn(kick)
 		return
 	}
+	// 启动心跳检测
+	go StartHeartbeatDetection(packet.Device)
 
 	rData, err := proto.Marshal(&pb.RegisterPacket{
 		Device:  meta.Info.DeviceID,
@@ -55,7 +57,7 @@ func processRegisterPacket(id uint64, data []byte, kick chan struct{}) {
 		return
 	}
 
-	if err := stream.Send(&pb.HopPacket{Data: NewPacket(id, RegisterSuccessType, rData)}); err != nil {
+	if err := stream.Send(&pb.HopPacket{Data: NewPacket(mid, RegisterSuccessType, rData)}); err != nil {
 		register.Hub.Remove(packet.Device)
 		logger.Warn("Failed to send register response:", err.Error())
 		general.CloseStreamConn(kick)
@@ -72,8 +74,8 @@ func parseRegisterPacket(data []byte) *pb.RegisterPacket {
 }
 
 // 注册成功后反向注册服务端
-func processRegisterSuccessPacket(id uint64, data []byte, kick chan struct{}) {
-	stream, err := register.PopWaitingMsg(id)
+func processRegisterSuccessPacket(mid uint64, data []byte, kick chan struct{}) {
+	stream, err := register.PopWaitingMsg(mid)
 	if err != nil {
 		logger.Warn("Failed to get waiting message for register response:", err.Error())
 		return
@@ -98,10 +100,12 @@ func processRegisterSuccessPacket(id uint64, data []byte, kick chan struct{}) {
 		logger.Warn("Failed to register tunnel connection:", err.Error())
 		return
 	}
+	// 启动心跳检测
+	go StartHeartbeatDetection(resp.Device)
 }
 
 // 处理断开连接包
-func processDisconnectPacket(id uint64, data []byte, kick chan struct{}) {
+func processDisconnectPacket(data []byte, kick chan struct{}) {
 	var resp pb.HopNodeListPacket
 	if err := proto.Unmarshal(data, &resp); err != nil {
 		logger.Warn("Failed to unmarshal disconnect response:", err.Error())

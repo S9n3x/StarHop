@@ -17,6 +17,11 @@ const (
 	// 发生在剔除高延迟节点阶段，主节点链接数量已满，但是新来了一个低延迟的节点，给高延迟节点发送断开信号
 	// 这个类型需要携带非NAT节点的地址信息HopNodeListPacket
 	DisconnectPacketType
+	// 延时探测
+	PingPacketType
+	// 延时探测回应
+	PongPacketType
+
 	// 合法包类型的最大值
 	maxPacketType
 )
@@ -49,18 +54,6 @@ func (p *packet) toBytes() []byte {
 	buf[8] = uint8(p.Type)
 	copy(buf[9:], p.Data)
 	return buf
-}
-
-// byte转packet
-func bytesToPacket(data []byte) *packet {
-	if len(data) < 9 {
-		return nil
-	}
-	return &packet{
-		ID:   binary.BigEndian.Uint64(data[0:8]),
-		Type: packetType(uint8(data[8])),
-		Data: data[9:],
-	}
 }
 
 // 提取packetType

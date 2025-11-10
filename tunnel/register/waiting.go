@@ -35,6 +35,13 @@ func PopWaitingMsg(msgID uint64) (pb.Stream, error) {
 	return msg.Stream, nil
 }
 
+// 清除对应消息
+func ClearWaitingMsg(msgID uint64) {
+	WaitingMsgsMu.Lock()
+	defer WaitingMsgsMu.Unlock()
+	delete(WaitingMsgs, msgID)
+}
+
 // PutWaitingMsg 传入链接
 func PutWaitingMsg(msgID uint64, stream pb.Stream) {
 	WaitingMsgsMu.Lock()

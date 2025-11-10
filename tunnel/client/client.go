@@ -8,11 +8,20 @@ import (
 	"StarHop/utils/meta"
 	"context"
 	"crypto/tls"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/proto"
 )
+
+// 10秒的心跳,防止中间路由断开
+var kacp = keepalive.ClientParameters{
+	Time:                10 * time.Second,
+	Timeout:             5 * time.Second,
+	PermitWithoutStream: true, // 空闲时依旧发送心跳
+}
 
 func Register(addr string) {
 	tlsConfig := &tls.Config{
@@ -20,7 +29,11 @@ func Register(addr string) {
 	}
 	creds := credentials.NewTLS(tlsConfig)
 
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(
+		addr,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithKeepaliveParams(kacp),
+	)
 	if err != nil {
 		logger.Warn("Unable to connect to the server:", err.Error())
 		return
