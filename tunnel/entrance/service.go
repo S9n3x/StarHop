@@ -10,6 +10,9 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	// 加入gzip压缩支持
+	_ "google.golang.org/grpc/encoding/gzip"
 )
 
 // hop Tunnel 实现

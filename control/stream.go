@@ -78,7 +78,7 @@ func streamRecvErrorHandle(err error, stream pb.Stream) bool {
 		}
 	}
 	logger.Warn("Unknown stream error (not closing stream)", " err=", err.Error())
-	return false
+	return true
 }
 
 func logAndRemoveStream(stream pb.Stream, err error, reason string) {

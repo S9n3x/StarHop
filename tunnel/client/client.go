@@ -33,7 +33,8 @@ func Register(addr string) {
 		addr,
 		grpc.WithTransportCredentials(creds),
 		grpc.WithKeepaliveParams(kacp),
-	)
+		// gzip压缩
+		grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")))
 	if err != nil {
 		logger.Warn("Unable to connect to the server:", err.Error())
 		return
