@@ -19,20 +19,21 @@ var (
 type waitingMsg struct {
 	Stream    pb.Stream
 	CreatedAt time.Time
+	Pid       uint64
 }
 
 // PopWaitingMsg 取出消息
-func PopWaitingMsg(msgID uint64) (pb.Stream, error) {
+func PopWaitingMsg(msgID uint64) (pb.Stream, uint64, error) {
 	WaitingMsgsMu.Lock()
 	defer WaitingMsgsMu.Unlock()
 
 	msg, exists := WaitingMsgs[msgID]
 	if !exists {
-		return nil, ErrMsgNotFound
+		return nil, 0, ErrMsgNotFound
 	}
 
 	delete(WaitingMsgs, msgID)
-	return msg.Stream, nil
+	return msg.Stream, msg.Pid, nil
 }
 
 // 清除对应消息
@@ -50,7 +51,20 @@ func PutWaitingMsg(msgID uint64, stream pb.Stream) {
 	WaitingMsgs[msgID] = &waitingMsg{
 		Stream:    stream,
 		CreatedAt: time.Now(),
+		Pid:       0,
 	}
+}
+
+// 设置某个ID的pid
+func SetWaitingMsgPid(msgID, pid uint64) bool {
+	WaitingMsgsMu.Lock()
+	defer WaitingMsgsMu.Unlock()
+
+	if msg, exists := WaitingMsgs[msgID]; exists {
+		msg.Pid = pid
+		return true
+	}
+	return false
 }
 
 // StartWaitingMsgsAutoCleanup 自动清理超时链接

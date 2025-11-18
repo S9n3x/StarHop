@@ -8,6 +8,8 @@ service HopTunnel {
   rpc Stream (stream HopPacket) returns (stream HopPacket);
 }
 
+// 基础数据的包
+// 还用于代理数据传输
 message HopPacket {
   bytes data = 1;
 }

@@ -76,7 +76,7 @@ func processPingPacket(mid uint64, data []byte, kick chan struct{}) {
 		return
 	}
 	// 处理Ping包
-	stream, err := register.PopWaitingMsg(mid)
+	stream, _, err := register.PopWaitingMsg(mid)
 	if err != nil {
 		logger.Warn("Failed to get waiting message for register response:", err.Error())
 		general.CloseStreamConn(kick)
@@ -111,4 +111,6 @@ func processPongPacket(mid uint64, data []byte, kick chan struct{}, time time.Ti
 	if err := register.Hub.UpdateLatency(name, time.Sub(stime).Milliseconds()); err != nil {
 		logger.Warn("Failed to update latency for ", name, ":", err.Error())
 	}
+	// 输出延时
+	logger.Debug("Latency for ", name, ": ", time.Sub(stime).Milliseconds(), " ms")
 }

@@ -18,7 +18,7 @@ func processRegisterPacket(mid uint64, data []byte, kick chan struct{}) {
 	packet := parseRegisterPacket(data)
 	// TODO版本判断
 
-	stream, err := register.PopWaitingMsg(mid)
+	stream, _, err := register.PopWaitingMsg(mid)
 	if err != nil {
 		logger.Warn("Failed to get waiting message for register response:", err.Error())
 		general.CloseStreamConn(kick)
@@ -75,7 +75,7 @@ func parseRegisterPacket(data []byte) *pb.RegisterPacket {
 
 // 注册成功后反向注册服务端
 func processRegisterSuccessPacket(mid uint64, data []byte, kick chan struct{}) {
-	stream, err := register.PopWaitingMsg(mid)
+	stream, _, err := register.PopWaitingMsg(mid)
 	if err != nil {
 		logger.Warn("Failed to get waiting message for register response:", err.Error())
 		return

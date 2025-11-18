@@ -122,23 +122,15 @@ func (r *registryHub) UpdateLatency(name string, latency int64) error {
 	return nil
 }
 
-// GetBest 获取延迟最低的连接并移到队尾
+// GetBest 获取队伍最前面的，然后移动到队伍尾部
 func (r *registryHub) GetBest() (*TunnelConn, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-
 	if len(r.sorted) == 0 {
 		return nil, ErrNoConnAvailable
 	}
-
 	bestConn := r.sorted[0]
-
-	// 整体前移
-	copy(r.sorted[0:], r.sorted[1:])
-
-	// 把第一个放到最后
-	r.sorted[len(r.sorted)-1] = bestConn
-
+	r.sorted = append(r.sorted[1:], bestConn)
 	return bestConn, nil
 }
 

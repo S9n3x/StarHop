@@ -17,7 +17,7 @@ func Init() {
 // 通道数据的接收
 func receiveTunnelData(msg tunnelMsg) {
 
-	// 获取消息ID
+	// 获取消息ID，PS:这个消息ID是自己当前的消息ID
 	ptype, ok := getPacketType(msg.data)
 	if !ok {
 		return
@@ -35,6 +35,12 @@ func receiveTunnelData(msg tunnelMsg) {
 	case PongPacketType:
 		// 处理pong包
 		processPongPacket(msg.id, msg.data, msg.kick, time.Now())
+	case HttpProxyRequestPacketType:
+		// HTTP代理请求处理
+		processHttpProxyRequestPacket(msg.id, msg.data, msg.kick)
+	case HttpProxyResponsePacketType:
+		// HTTP代理响应处理
+		processHttpProxyResponsePacket(msg.id, msg.data, msg.kick)
 	default:
 		// 未知包类型，丢弃
 	}

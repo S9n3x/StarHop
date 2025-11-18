@@ -2,6 +2,7 @@ package control
 
 import (
 	"encoding/binary"
+	"errors"
 	"sync/atomic"
 )
 
@@ -22,6 +23,11 @@ const (
 	// 延时探测回应
 	PongPacketType
 
+	// HTTP代理请求包
+	HttpProxyRequestPacketType
+	// HTTP代理返回包
+	HttpProxyResponsePacketType
+
 	// 合法包类型的最大值
 	maxPacketType
 )
@@ -41,6 +47,9 @@ func NewPacket(id uint64, ptype packetType, data []byte) []byte {
 	}).toBytes()
 }
 
+// 0-7是id
+// 8是type
+// 9:-数据
 type packet struct {
 	ID   uint64
 	Type packetType
@@ -80,4 +89,61 @@ func getMsgID(data []byte) (uint64, bool) {
 
 	id := binary.BigEndian.Uint64(data[0:8])
 	return id, true
+}
+
+type httpProxyPacket struct {
+	// 剩余需要转发节点的总数
+	RemainingHops uint8
+	// 一共需要转发的总数
+	TotalHops uint8
+	// 数据
+	Data []byte
+}
+
+// 转bytes
+func (p *httpProxyPacket) ToBytes() []byte {
+	result := make([]byte, 2+len(p.Data))
+	result[0] = p.RemainingHops
+	result[1] = p.TotalHops
+
+	copy(result[2:], p.Data)
+	return result
+}
+
+// 获取HttpProxyPacket中的跳点数量
+func getHttpProxyPacketRemainingHops(data []byte) (uint8, bool) {
+	if len(data) < 1 {
+		return 0, false
+	}
+
+	numHops := data[0]
+	return numHops, true
+}
+
+// 判断是否需要继续回传节点
+// true 继续转发
+// flase 说明已经到达最终节点
+func needHttpProxyPacketForwarding(data []byte) (bool, error) {
+	if len(data) < 2 {
+		// 数据不对
+		return true, errors.New("needHttpProxyPacketForwarding data length less than 2")
+	}
+	if data[0] == data[1] {
+		// 到达最终节点
+		return false, nil
+	}
+	if data[0] > data[1] {
+		// 数据出现错误，
+		return true, errors.New("needHttpProxyPacketForwarding data error: remaining hops greater than total hops")
+	}
+	return true, nil
+}
+
+// 获取HttpProxyPacket中总跳点数量
+func getHttpProxyPacketTotalHops(data []byte) (uint8, bool) {
+	if len(data) < 2 {
+		return 0, false
+	}
+	numHops := data[1]
+	return numHops, true
 }
